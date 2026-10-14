@@ -1,0 +1,80 @@
+services:
+  catalogue:
+    build: ./catalogue 
+    image: manojkumar267/catalogue:1.0.0
+    container_name: catalogue
+    depends_on:
+    - mongodb
+  user:
+    build: ./user
+    image: manojkumar267/user:1.0.0
+    container_name: user 
+    depends_on:
+    - mongodb
+    - redis
+  frontend:
+    build: ./frontend 
+    image: manojkumar267/frontend:1.0.0
+    container_name: frontend 
+    ports:
+    - "80:80"
+    depends_on:
+    - catalogue
+    - user
+    - cart 
+    - shipping
+    - payment
+  cart:
+    build: ./cart 
+    image: manojkumar267/cart:1.0.0
+    container_name: cart 
+    depends_on:
+    - catalogue 
+    - redis
+  shipping:
+    build: ./shipping 
+    image: manojkumar267/shipping:1.0.0
+    container_name: shipping 
+    depends_on:
+    - cart
+    - mysql
+  payment:
+    build: ./payment
+    image: manojkumar267/payment:1.0.0
+    environment:
+      CART_HOST: "cart" 
+      CART_PORT: "8080"
+      USER_HOST: "user"
+      USER_PORT: "8080"
+      AMQP_HOST: "rabbitmq"
+      AMQP_USER: "roboshop"
+      AMQP_PASS: "roboshop123" 
+      container_name: payment
+    depends_on:
+    - user 
+    - cart 
+    - rabbitmq
+  mongodb: 
+    build: ./mongodb
+    image: manojkumar267/mongodb:1.0.0    # docker build -t manojkumar267/mongodb:1.0.0 .
+    container_name: mongodb
+  redis:
+    image: redis:7.0     # directly it pulls we don't need to build
+    container_name: redis
+  rabbitmq:
+    image: rabbitmq:3
+    environment:
+      RABBITMQ_DEFAULT_USER: roboshop
+      RABBITMQ_DEFAULT_PASS: roboshop123
+    container_name: rabbitmq
+  mysql:
+    build: ./mysql 
+    image: manojkumar267/mysql:1.0.0
+    container_name: mysql
+
+networks:
+  default:
+    driver: bridge
+    name: roboshop
+    external: false # if true, you need to create network manually
+    # for all our services our roboshop network will set
